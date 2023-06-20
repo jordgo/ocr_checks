@@ -1,0 +1,29 @@
+https://favicon.tech/obuchaem-vmeste-s-tesseract-ocr/
+sudo apt-get install imagemagick
+convert *.png -compress lzw en.bonefont.exp0.tif
+tesseract en.bonefont.exp0.tif en.bonefont.exp0 batch.nochop makebox
+java -Xms128m -Xmx1024m -jar jTessBoxEditor.jar
+
+tesseract en.bonefont.exp0.tif en.bonefont.exp0 nobatch box.train
+unicharset_extractor en.bonefont.exp0.box
+
+Other case U of u is not in unicharset
+Mirror < of > is not in unicharset
+Other case W of w is not in unicharset
+Other case J of j is not in unicharset
+Other case Y of y is not in unicharset
+
+en.font_properties
+
+shapeclustering -F en.font_properties -U unicharset en.bonefont.exp0.tr
+mftraining -F en.font_properties -U unicharset -O en.unicharset en.bonefont.exp0.tr
+cntraining en.bonefont.exp0.tr
+
+unicharambigs
+
+combine_tessdata en
+
+
+wordlist2dawg frequent_words_list en.freq-dawg en.unicharset
+
+wordlist2dawg words_list en.word-dawg en.unicharset

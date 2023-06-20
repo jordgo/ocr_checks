@@ -1,0 +1,1 @@
+docker stack deploy --compose-file '/home/george/PycharmProjects/open_cv_take_bone_txt/conf/mongo_stack.yml' mongostack
