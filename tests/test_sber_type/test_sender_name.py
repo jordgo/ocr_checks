@@ -1,8 +1,8 @@
 import pytest
 
-from models.base_check_type import NOT_DEFINED
+from models.types.base_check_type import NOT_DEFINED
 from models.data_classes import RectangleData
-from models.sber_type import SberType
+from models.types.sber_type import SberType
 
 
 @pytest.mark.parametrize("name, res", [

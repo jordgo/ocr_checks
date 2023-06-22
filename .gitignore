@@ -51,7 +51,6 @@ docs/_build/
 
 .idea/
 tests/results/
-tests/imgs/results/
-logs/
+tests/imgs/result/
 *.pyc
 utility/tessdata/training_data/

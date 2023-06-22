@@ -1,16 +1,9 @@
-import base64
-import json
 import logging
 import multiprocessing
 import threading
 import time
-from json import JSONDecodeError
 from multiprocessing import Pool
 import queue
-from multiprocessing.process import BaseProcess
-from typing import List
-
-import numpy as np
 
 from main import process_img
 from models.request_bcheck_data import RequestBankCheck
@@ -44,7 +37,7 @@ class QueueHandler:
         while True:
             if self.event.isSet():
                 break
-            print('111111111111111111111 ', self.active_tasks_queue.qsize(), not self.q.empty())
+            # print('111111111111111111111 ', self.active_tasks_queue.qsize(), not self.q.empty())
             if self.active_tasks_queue.qsize() < self.pool_size and not self.q.empty():
                 _logger.info(f"Checking queue")
                 request_data = self.q.get()

@@ -5,6 +5,8 @@ import logging
 from dataclasses import dataclass
 from typing import List, Dict, Optional
 
+import numpy as np
+
 from models.data_classes import RectangleData
 
 
@@ -16,28 +18,9 @@ NOT_DEFINED = 'not defined'
 
 @dataclass
 class BaseCheckType(abc.ABC):
-    sender_name: str = None
-    sender_card_number: str = None
-    recipient_name: str = None
-    recipient_card_number: str = None
     check_date: str = None
     amount: str = None
     document_number: str = None
-    @abc.abstractmethod
-    def parse_sender_name(self):
-        return NotImplemented
-
-    @abc.abstractmethod
-    def parse_sender_card_number(self):
-        return NotImplemented
-
-    @abc.abstractmethod
-    def parse_recipient_name(self):
-        return NotImplemented
-
-    @abc.abstractmethod
-    def parse_recipient_card_number(self):
-        return NotImplemented
 
     @abc.abstractmethod
     def parse_check_date(self):
@@ -53,19 +36,12 @@ class BaseCheckType(abc.ABC):
 
     @staticmethod
     @abc.abstractmethod
-    def create(rects: List[RectangleData]):
+    def create(rects: List[RectangleData], img: np.ndarray):
         return NotImplemented
 
-    @property
+    @abc.abstractmethod
     def build(self):
-        self.parse_sender_name()
-        self.parse_sender_card_number()
-        self.parse_recipient_name()
-        self.parse_recipient_card_number()
-        self.parse_check_date()
-        self.parse_amount()
-        self.parse_document_number()
-        return self
+        return NotImplemented
 
     @property
     def to_dict(self):
@@ -78,11 +54,6 @@ class BaseCheckType(abc.ABC):
                           separators=(',', ':')
                           )
 
-
-# class TinkofType(BaseCheckType):
-#     pass
-#
-#
 # class VTBType(BaseCheckType):
 #     pass
 #

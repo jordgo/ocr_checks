@@ -4,9 +4,10 @@ import cv2
 import numpy as np
 
 from models.data_classes import RectangleData
+from utility.rectangle_utils.sentences import get_sentences, get_sentences2
 
-MORPH_KERNEL_SIZE = 5
-THRESHOLD_CONTOURS_POINTS = 1000
+
+# THRESHOLD_CONTOURS_POINTS = 1000
 
 
 def _get_rect_lines(gray: np.ndarray) -> np.ndarray:
@@ -126,6 +127,7 @@ def get_rect_by_contours(orig_img: np.ndarray, config, is_debug: bool = False) -
     MAX_H_OF_WORD = config["env"]["MAX_H_OF_WORD"]
     MIN_H_OF_WORD = config["env"]["MIN_H_OF_WORD"]
     MIN_W_OF_WORD = config["env"]["MIN_W_OF_WORD"]
+    MORPH_KERNEL_SIZE = 5
     morph_kernel = np.ones((MORPH_KERNEL_SIZE, MORPH_KERNEL_SIZE))
 
     gray = cv2.cvtColor(orig_img, cv2.COLOR_BGR2GRAY)
@@ -157,16 +159,16 @@ def get_rect_by_contours(orig_img: np.ndarray, config, is_debug: bool = False) -
                                                                      MAX_H_OF_WORD,
                                                                      MIN_H_OF_WORD)
 
-    rect_possibly_contains_text = []
-    for bc in boxes_with_cnt:
-        box, cnt = bc
-        count_of_points_per_area, count_boxes = _get_count_of_points_per_area(box, orig_boxes_with_cnt)
-        if count_of_points_per_area < 300 or box.h > MAX_H_OF_WORD or box.h < MIN_H_OF_WORD:
-            continue
-        if is_debug:
-            rect_possibly_contains_text.append((box, (count_of_points_per_area, count_boxes)))  # DEBUG ONLY
-        else:
-            rect_possibly_contains_text.append(box)
+    rect_possibly_contains_text = get_sentences2([o[0] for o in orig_boxes_with_cnt]) # []
+    # for bc in boxes_with_cnt:
+    #     box, cnt = bc
+    #     count_of_points_per_area, count_boxes = _get_count_of_points_per_area(box, orig_boxes_with_cnt)
+    #     if count_of_points_per_area < 300 or box.h > MAX_H_OF_WORD or box.h < MIN_H_OF_WORD:
+    #         continue
+    #     if is_debug:
+    #         rect_possibly_contains_text.append((box, (count_of_points_per_area, count_boxes)))  # DEBUG ONLY
+    #     else:
+    #         rect_possibly_contains_text.append(box)
 
     # for r, cnt in orig_boxes_with_cnt:
     #     cv2.rectangle(orig_img, (r.x, r.y), (r.x + r.w, r.y + r.h), (0, 255, 0), 1)
@@ -174,9 +176,12 @@ def get_rect_by_contours(orig_img: np.ndarray, config, is_debug: bool = False) -
     #     cv2.rectangle(orig_img, (r.x, r.y), (r.x + r.w, r.y + r.h), (255, 0, 0), 1)
     # for r, cnt in boxes_with_cnt:
     #     cv2.rectangle(orig_img, (r.x, r.y), (r.x + r.w, r.y + r.h), (255, 0, 0), 2)
+    #
+    # cv2.drawContours(orig_img, contours_with_dilate[-2:-1], -1, (255, 0, 0), 3)
+
     # cv2.namedWindow('Test', cv2.WINDOW_NORMAL)
     # cv2.resizeWindow("Test", 1700, 900)
-    # cv2.imshow("Test", thresh1)
+    # cv2.imshow("Test", orig_img)
     # cv2.waitKey(0)
     # cv2.destroyAllWindows()
     return rect_possibly_contains_text

@@ -2,7 +2,10 @@ import logging
 from dataclasses import dataclass
 from typing import List
 
-from models.base_check_type import BaseCheckType, NOT_DEFINED
+import numpy as np
+
+from models.types.additional_fields import SenderCardNumber, SenderName, RecipientName, RecipientCardNumber
+from models.types.base_check_type import BaseCheckType, NOT_DEFINED
 from models.data_classes import RectangleData
 from utility.comparison.comparation import is_different_text
 
@@ -10,15 +13,21 @@ _logger = logging.getLogger("app")
 
 
 @dataclass
-class SberType(BaseCheckType):
-    def __init__(self, rects: List[RectangleData]):
+class SberType(BaseCheckType,
+               SenderCardNumber,
+               SenderName,
+               RecipientName,
+               RecipientCardNumber,
+               ):
+    def __init__(self, rects: List[RectangleData], img: np.ndarray):
         self.rects = rects
+        self.img = img
 
     @staticmethod
-    def create(rects: List[RectangleData]):
+    def create(rects: List[RectangleData], img: np.ndarray):
         texts = [r.text.lower().replace(' ', '') for r in rects]
         if 'чекпооперации' in texts:
-            return SberType(rects).build
+            return SberType(rects, img).build
         else:
             return False
 
@@ -66,3 +75,14 @@ class SberType(BaseCheckType):
     def parse_document_number(self):
         DOC_NUMBER = 'Номер документа'
         self.document_number = self._parse_next_field_by_field_name([DOC_NUMBER], self.rects)
+
+    @property
+    def build(self):
+        self.parse_sender_name()
+        self.parse_sender_card_number()
+        self.parse_recipient_name()
+        self.parse_recipient_card_number()
+        self.parse_check_date()
+        self.parse_amount()
+        self.parse_document_number()
+        return self

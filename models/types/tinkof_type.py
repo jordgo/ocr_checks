@@ -2,7 +2,10 @@ import logging
 from dataclasses import dataclass
 from typing import List
 
-from models.base_check_type import BaseCheckType, NOT_DEFINED
+import numpy as np
+
+from models.types.additional_fields import SenderName, RecipientName, RecipientCardNumber
+from models.types.base_check_type import BaseCheckType, NOT_DEFINED
 from models.data_classes import RectangleData
 from utility.comparison.comparation import is_different_text
 
@@ -10,17 +13,27 @@ _logger = logging.getLogger("app")
 
 
 @dataclass
-class TinkoffType(BaseCheckType):
-    def __init__(self, rects: List[RectangleData]):
+class TinkoffType(BaseCheckType,
+                  SenderName,
+                  RecipientName,
+                  RecipientCardNumber,
+                  ):
+    def __init__(self, rects: List[RectangleData], img: np.ndarray):
         self.rects = rects
+        self.img = img
 
     @staticmethod
-    def create(rects: List[RectangleData]):
+    def create(rects: List[RectangleData], img: np.ndarray):
         texts = [r.text.lower().replace(' ', '') for r in rects]
-        if 'тинькофф' in texts:
-            return TinkoffType(rects).build
+        keys = ['тинькофф', 'статус', 'перевод']
+        for key in keys:
+            for t in texts:
+                if key in t:
+                    break
+            else:
+                return False
         else:
-            return False
+            return TinkoffType(rects, img).build
 
     @staticmethod
     def _parse_next_field_by_field_name(field_names: List[str], rects: List[RectangleData]) -> str:
@@ -55,10 +68,6 @@ class TinkoffType(BaseCheckType):
         SENDER_NAME = 'Отправитель'
         self.sender_name = self._parse_next_field_by_field_name([SENDER_NAME], self.rects)
 
-    def parse_sender_card_number(self):
-        SENDER_CARD_NUMBER: List[str] = ['']
-        self.sender_card_number = NOT_DEFINED
-
     def parse_recipient_name(self):
         RECIPIENT_NAME = 'Получатель'
         self.recipient_name = self._parse_next_field_by_field_name([RECIPIENT_NAME], self.rects)
@@ -78,3 +87,13 @@ class TinkoffType(BaseCheckType):
     def parse_document_number(self):
         DOC_NUMBER = 'Квитанция №'
         self.document_number = self._parse_next_field_by_field_name([DOC_NUMBER], self.rects)
+
+    @property
+    def build(self):
+        self.parse_sender_name()
+        self.parse_recipient_name()
+        self.parse_recipient_card_number()
+        self.parse_check_date()
+        self.parse_amount()
+        self.parse_document_number()
+        return self

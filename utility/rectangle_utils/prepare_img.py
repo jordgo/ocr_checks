@@ -33,5 +33,9 @@ def cut_img(img: np.ndarray, config) -> np.ndarray:
 
     x = max(frequency_dict, key=frequency_dict.get)
 
-    img_cropped = img[0:h, x - 10:w]
+    img_cropped = img[0:h, x - 8:w]
     return img_cropped
+
+
+def cut_img_by_rect(img: np.ndarray, r: RectangleData) -> np.ndarray:
+    return img[r.y:r.y + r.h, r.x:r.x + r.w]

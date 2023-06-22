@@ -1,1 +1,4 @@
 docker stack deploy --compose-file '/home/george/PycharmProjects/open_cv_take_bone_txt/conf/mongo_stack.yml' mongostack
+docker build /home/george/PycharmProjects/ocr_checks -t gh106/ocr_checks
+docker push gh106/ocr_checks
+docker run --name ocr_checks -p 9000:9000 gh106/ocr_checks

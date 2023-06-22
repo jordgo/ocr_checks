@@ -40,9 +40,41 @@ resize_coeffs = [4, 6, 8]
 easyocr_reader = easyocr.Reader(['ru'])
 
 
+def _enlarge_image_canvas(gray: np.ndarray) -> np.ndarray:
+    """
+    enlargement of the canvas for better recognition
+    :param gray:np.ndarray
+    :return:np.ndarray - increased
+    """
+    h, w = gray.shape
+    add_h = int(h * 0.2)
+    add_w = int(w * 0.2)
+    count_of_iter = add_w if add_w > add_h else add_h
+    arr_res = np.ndarray
+    for i in range(count_of_iter):
+        if i == 0:
+            h, w = gray.shape
+            if add_h > 0:
+                arr_res = np.insert(gray, [0, h], 0, axis=0)
+                add_h -= 1
+            if add_w > 0:
+                arr_res = np.insert(arr_res, [0, w], 0, axis=1)
+                add_w -= 1
+        else:
+            h, w = arr_res.shape
+            if add_h > 0:
+                arr_res = np.insert(arr_res, [0, h], 0, axis=0)
+                add_h -= 1
+            if add_w > 0:
+                arr_res = np.insert(arr_res, [0, w], 0, axis=1)
+                add_w -= 1
+    return arr_res
+
+
 def prepared_img(cropped: np.ndarray, resize_coeff, is_digits: bool, is_bold: bool) -> np.ndarray:
     gray = cv2.cvtColor(cropped, cv2.COLOR_BGR2GRAY)
     resized = cv2.resize(gray, None, fy=resize_coeff, fx=resize_coeff, interpolation=cv2.INTER_LINEAR)
+    resized = _enlarge_image_canvas(resized)
 
     if is_digits:
         ret, thresh = cv2.threshold(resized, 220, 255, 0)  # , cv2.THRESH_OTSU | cv2.THRESH_BINARY_INV)
@@ -66,9 +98,9 @@ def prepared_img(cropped: np.ndarray, resize_coeff, is_digits: bool, is_bold: bo
         ret, thresh = cv2.threshold(blur1, 220, 255, 0)#, cv2.THRESH_OTSU | cv2.THRESH_BINARY_INV)
         # dilate_img1 = cv2.dilate(thresh, kernel=morph_kernel, iterations=1)
 
-    # cv2.imshow("Test", thresh)
-    # cv2.waitKey(0)
-    # cv2.destroyAllWindows()
+    cv2.imshow("Test", resized)
+    cv2.waitKey(0)
+    cv2.destroyAllWindows()
 
     return thresh
 
@@ -95,8 +127,8 @@ def _get_tesseract_resp(cropped: np.ndarray,
     conf = 0
     sum_conf = 0
     count_of_words = 0
-    print(word["text"])  #TODO DEBUG ONLY
-    print(word["conf"])
+    _logger.info(word["text"])  #TODO DEBUG ONLY
+    _logger.info(word["conf"])
     for i in range(len(word["text"])):
         txt = word['text'][i]
         cnf = word["conf"][i]
@@ -157,7 +189,7 @@ def _parse_with_easy_ocr(cropped: np.ndarray, is_bold: bool) -> tuple:
         result1 = easyocr_reader.readtext(resized, detail=1)
         filtered_result1 = [t for t in result1 if t[2] > EASY_OCR_CONF]
         concat_res = ' '.join([t[1] for t in filtered_result1])
-        print('Easy OCR:', result1)
+        _logger.info(f'Easy OCR: {result1}')
         resp = TesseractResp(concat_res, 90, 2, cropped)
         if concat_res.replace(' ', '') != '':
             return [resp], 1
@@ -256,10 +288,8 @@ def get_img_text_by_contours(img: np.ndarray,
             # _logger.debug(f"11111111111111111111111 {text}, conf={conf}, count_of_pass={count_of_pass}")
         saving(ROOT_DIR + '/tests/imgs/result', f"{count}_{text}_{time.time()}", text, cropped, False)
 
-        r.text = text
-        rectangles_txt.append(r)
-        # if text != '':
-        #     r.text = text
-        #     rectangles_txt.append(r)
+        if text != '':
+            r.text = text
+            rectangles_txt.append(r)
 
     return rectangles_txt

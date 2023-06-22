@@ -1,4 +1,8 @@
+import logging
 import time
+
+
+_logger = logging.getLogger("app")
 
 
 def print_time_of_script(func):
@@ -7,6 +11,6 @@ def print_time_of_script(func):
         res = func(*args, **kwargs)
         end = time.time()
         diff = int(end - start)
-        print("Processing time is {}s".format(diff))
+        _logger.info("=============== Processing time: {}s ===============".format(diff))
         return res
     return wrapper
