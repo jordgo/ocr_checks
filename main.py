@@ -36,15 +36,21 @@ def main(file_path: str) -> dict:
 def process_img(img: np.ndarray) -> dict:
     img_cropped = cut_img(img, config)
     rects = get_rect_by_contours(img_cropped, config)
-    sentences = get_sentences(rects)
-    rects_with_text = get_img_text_by_contours(img_cropped, sentences)
+    # sentences = get_sentences(rects)
+    rects_with_text = get_img_text_by_contours(img_cropped, rects)
     sorted_by_y = sorted(rects_with_text, key=lambda r: r.y)
     print(sorted_by_y)
     print([r.text for r in sorted_by_y])
-    check_type = find_type(sorted_by_y, img_cropped)
-    print(check_type.to_dict)
-    return check_type.to_dict
+    try:
+        check_type = find_type(sorted_by_y, img_cropped)
+        print(check_type.to_dict)
+        return check_type.to_dict
+    except TypeError:
+        message = 'Undefined document type'
+        _logger.error(message)
+        return {'status': 'error', 'error': message}
 
 
 if __name__ == "__main__":
-    main(ROOT_DIR + "/tests/imgs/vtb_1.jpeg")
+    # main(ROOT_DIR + "/tests/imgs/alfa/alfa_1.jpeg")
+    main(ROOT_DIR + "/tests/imgs/alfa/alfa_3.jpg")

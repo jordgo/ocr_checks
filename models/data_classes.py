@@ -1,4 +1,5 @@
 from dataclasses import dataclass, astuple, asdict
+from typing import List
 
 import numpy as np
 
@@ -13,6 +14,7 @@ class TesseractResp:
     conf: float
     resize_coeff: int
     frame: np.ndarray
+    results: List[str]
 
     def __iter__(self):
         return iter(astuple(self))
@@ -54,3 +56,21 @@ class RectangleData:
     @staticmethod
     def empty():
         return RectangleData(0, 0, 0, 0, '')
+
+
+@dataclass
+class FrequencyKey:
+    value: str
+    order:  int
+    count: int = 0
+
+    def __hash__(self):
+        return hash((self.value))
+
+    def increment_order(self, new_order):
+        self.order += new_order
+        self.count += 1
+
+    @property
+    def avg_order(self) -> float:
+        return self.order / self.count if self.count != 0 else 0

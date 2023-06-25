@@ -54,3 +54,21 @@ class TransactionNumberForRecipient(abc.ABC):
     @abc.abstractmethod
     def parse_transaction_number_for_recipient(self):
         return NotImplemented
+
+
+@dataclass
+class SBPID(abc.ABC):
+    sbp_id: str = None
+
+    @abc.abstractmethod
+    def parse_sbp_id(self):
+        return NotImplemented
+
+
+@dataclass
+class DocNumber(abc.ABC):
+    document_number: str = None
+
+    @abc.abstractmethod
+    def parse_document_number(self):
+        return NotImplemented

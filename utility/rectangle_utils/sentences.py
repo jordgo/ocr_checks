@@ -82,8 +82,8 @@ def get_sentences2(rectangles: List[RectangleData]) -> List[RectangleData]:
         lines: List[List[RectangleData]] = []
         line: List[RectangleData] = []
         for r in rectangles_sorted_y:
-            low = line[-1].y - line[-1].h  if line else 0
-            top = line[-1].y + line[-1].h  if line else 0
+            low = line[-1].y - line[-1].h*0.9  if line else 0
+            top = line[-1].y + line[-1].h*0.9  if line else 0
             if not line:
                 line = [r]
             elif low < r.y < top:
@@ -108,7 +108,8 @@ def get_sentences2(rectangles: List[RectangleData]) -> List[RectangleData]:
                 if curr_rect is None:
                     curr_rect = r
                 elif curr_rect.x + curr_rect.w + SPACING > r.x:
-                    new_w = r.x - curr_rect.x + r.w
+                    max_x = r.x + r.w if r.x + r.w > curr_rect.x + curr_rect.w else curr_rect.x + curr_rect.w
+                    new_w = max_x - curr_rect.x #r.x - curr_rect.x + r.w
                     new_text = curr_rect.text + " " + r.text
                     new_y = r.y if r.y < curr_rect.y else curr_rect.y
                     max_y = r.y + r.h if r.y + r.h > curr_rect.y + curr_rect.h else curr_rect.y + curr_rect.h
@@ -123,7 +124,18 @@ def get_sentences2(rectangles: List[RectangleData]) -> List[RectangleData]:
                 res_list.append(curr_rect)
                 curr_rect = None
 
-        res = res_list if res_list else []
+        if res_list:
+            for r in res_list:
+                coeff = 2
+                r.x = r.x - coeff
+                r.w = r.w + coeff * 2
+                r.y = r.y - 2
+                r.h = r.h + coeff * 2
+
+            res = res_list
+        else:
+            res = []
+
         return res
     else:
         []

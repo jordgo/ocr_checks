@@ -20,7 +20,6 @@ NOT_DEFINED = 'not defined'
 class BaseCheckType(abc.ABC):
     check_date: str = None
     amount: str = None
-    document_number: str = None
 
     @abc.abstractmethod
     def parse_check_date(self):
@@ -28,10 +27,6 @@ class BaseCheckType(abc.ABC):
 
     @abc.abstractmethod
     def parse_amount(self):
-        return NotImplemented
-
-    @abc.abstractmethod
-    def parse_document_number(self):
         return NotImplemented
 
     @staticmethod

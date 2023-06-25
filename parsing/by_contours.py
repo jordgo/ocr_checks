@@ -9,7 +9,7 @@ import numpy as np
 from pytesseract import pytesseract
 
 from definition import ROOT_DIR
-from parsing.post_process import fix_word
+from parsing.post_process import fix_word, create_str_from_frequency_dict, create_frequency_dict
 from utility.decors.prdecorators import print_time_of_script
 from models.data_classes import TesseractResp, RectangleData
 from utility.saving.save_to_dir import saving
@@ -28,7 +28,7 @@ TESSERACT_CONF_DEFAULT = f'-l rus --oem 1 --psm 3 '  \
                       f'--tessdata-dir {ROOT_DIR}/utility/tessdata/default -c tessedit_char_blacklist={TESSERACT_BLACKLIST}'  # 3 7
 TESSERACT_CONF_MAIN = f'-l rus --oem 1 --psm 3 '  \
                       f'--tessdata-dir {ROOT_DIR}/utility/tessdata/default -c tessedit_char_blacklist={TESSERACT_BLACKLIST}'  # 3 7
-TESSERACT_CONF_DIGITS = f'-l eng --oem 1 -c tessedit_char_whitelist=0123456789.,-=₽ --psm 6 -c tessedit_char_blacklist={TESSERACT_BLACKLIST}'  # 4 6 7 8
+TESSERACT_CONF_DIGITS = f'-l eng --oem 1 -c tessedit_char_whitelist=*№0123456789.,-₽ --psm 6 -c tessedit_char_blacklist={TESSERACT_BLACKLIST}'  # 4 6 7 8
 
 TESSERACT_CONF_MAIN_WAITLIST = '-l eng --oem 1 --psm 3 ' \
                                '-c tessedit_char_whitelist=ABCDEFGHIJKLMNOPQRSTUVWXYZ0123456789abcdefghijklmnopqrstuvwxyz.-><°' \
@@ -55,18 +55,18 @@ def _enlarge_image_canvas(gray: np.ndarray) -> np.ndarray:
         if i == 0:
             h, w = gray.shape
             if add_h > 0:
-                arr_res = np.insert(gray, [0, h], 0, axis=0)
+                arr_res = np.insert(gray, [0, h], 255, axis=0)
                 add_h -= 1
             if add_w > 0:
-                arr_res = np.insert(arr_res, [0, w], 0, axis=1)
+                arr_res = np.insert(arr_res, [0, w], 255, axis=1)
                 add_w -= 1
         else:
             h, w = arr_res.shape
             if add_h > 0:
-                arr_res = np.insert(arr_res, [0, h], 0, axis=0)
+                arr_res = np.insert(arr_res, [0, h], 255, axis=0)
                 add_h -= 1
             if add_w > 0:
-                arr_res = np.insert(arr_res, [0, w], 0, axis=1)
+                arr_res = np.insert(arr_res, [0, w], 255, axis=1)
                 add_w -= 1
     return arr_res
 
@@ -98,9 +98,9 @@ def prepared_img(cropped: np.ndarray, resize_coeff, is_digits: bool, is_bold: bo
         ret, thresh = cv2.threshold(blur1, 220, 255, 0)#, cv2.THRESH_OTSU | cv2.THRESH_BINARY_INV)
         # dilate_img1 = cv2.dilate(thresh, kernel=morph_kernel, iterations=1)
 
-    cv2.imshow("Test", resized)
-    cv2.waitKey(0)
-    cv2.destroyAllWindows()
+    # cv2.imshow("Test", resized)
+    # cv2.waitKey(0)
+    # cv2.destroyAllWindows()
 
     return thresh
 
@@ -139,8 +139,9 @@ def _get_tesseract_resp(cropped: np.ndarray,
             text = text + txt + ' '
 
     text, conf = (text.strip(), conf) if conf > quality_min else ('', 0)
+    results = [w for w in word["text"] if w != '']
     # print('99999999999999999999999', text, conf, resize_coeff)
-    return TesseractResp(text=text, conf=conf, resize_coeff=resize_coeff, frame=thresh)
+    return TesseractResp(text=text, conf=conf, resize_coeff=resize_coeff, frame=thresh, results=results)
 
 
 def _get_text_by_max_conf(results) -> TesseractResp:
@@ -182,6 +183,7 @@ def _parse_with_easy_ocr(cropped: np.ndarray, is_bold: bool) -> tuple:
     for resize_coeff in [2, 4]:
         gray = cv2.cvtColor(cropped, cv2.COLOR_BGR2GRAY)
         resized = cv2.resize(gray, None, fy=resize_coeff, fx=resize_coeff, interpolation=cv2.INTER_LINEAR)
+        resized = _enlarge_image_canvas(resized)
         if is_bold:
             kernel_size = 5
             morph_kernel = np.ones((kernel_size, kernel_size))
@@ -190,10 +192,10 @@ def _parse_with_easy_ocr(cropped: np.ndarray, is_bold: bool) -> tuple:
         filtered_result1 = [t for t in result1 if t[2] > EASY_OCR_CONF]
         concat_res = ' '.join([t[1] for t in filtered_result1])
         _logger.info(f'Easy OCR: {result1}')
-        resp = TesseractResp(concat_res, 90, 2, cropped)
+        resp = TesseractResp(concat_res, 90, 2, cropped, [])
         if concat_res.replace(' ', '') != '':
             return [resp], 1
-    return [TesseractResp('', 0, 2, cropped)], 1
+    return [TesseractResp('', 0, 2, cropped, [])], 1
 
 
 def _get_results_by_tesseract_configs(cropped: np.ndarray) -> tuple:
@@ -210,33 +212,40 @@ def _get_results_by_tesseract_configs(cropped: np.ndarray) -> tuple:
     count2 = 0
     res1 = _get_text_by_max_conf(results1)
     results2 = []
-    if res1.conf < 90: # or len(res.text.replace(' ', '')) < letters_number:
+    if res1.conf < 94: # or len(res.text.replace(' ', '')) < letters_number:
         results2, count2 = _get_results(TESSERACT_CONF_DIGITS, cropped, True, False,
                                        TESSERACT_DIGITS_QUALITY, TESSERACT_DIGITS_QUALITY_MIN)
 
-    h, w, _ = np.shape(cropped)
-    cut_cropped: np.ndarray = cropped[0:h, 0:int(w - w*0.2)]
-    res2 = _get_text_by_max_conf(results2) if results2 else None
-    results3 = []
-    count4 = 0
-    if (res2 is None or res2.conf < 90) and (len(res1.text) > 0 and res1.text.replace(' ', '').lower()[-1] == 'р'):
-        results3, count4 = _get_results(TESSERACT_CONF_DIGITS, cut_cropped, True, False,
-                                       TESSERACT_DIGITS_QUALITY, TESSERACT_DIGITS_QUALITY_MIN)
+    # h, w, _ = np.shape(cropped)
+    # cut_cropped: np.ndarray = cropped[0:h, 0:int(w - w*0.2)]
+    # res2 = _get_text_by_max_conf(results2) if results2 else None
+    # results3 = []
+    # count4 = 0
+    # if (res2 is None or res2.conf < 90) and (len(res1.text) > 0 and res1.text.replace(' ', '').lower()[-1] == 'р'):
+    #     results3, count4 = _get_results(TESSERACT_CONF_DIGITS, cut_cropped, True, False,
+    #                                    TESSERACT_DIGITS_QUALITY, TESSERACT_DIGITS_QUALITY_MIN)
 
-    results = [_get_text_by_max_conf(results2 + results1 + results3)]
-
-    # cut_cropped: np.ndarray = cropped[0:h, int(w/2.3):w]
-    # count3 = 0
-    # if _get_text_by_max_conf(results).conf == 0:
-    #     results, count3 = _get_results(TESSERACT_CONF_DIGITS, cut_cropped, True,
-    #                                    TESSERACT_DIGITS_QUALITY, TESSERACT_DIGITS_QUALITY_MIN,
-    #                                    letters_number)
+    results = [_get_text_by_max_conf(results2 + results1)]
 
     count5 = 0
-    text = _get_text_by_max_conf(results).text.strip() if results else ""
-    if text == '':
+    res5 = _get_text_by_max_conf(results) #.text.strip() if results else ""
+    results4 = []
+    if res5 is None or (res5 and res5.conf < 94):
         results, count5 = _get_results(TESSERACT_CONF_DEFAULT, cropped_origin, True, False,
                                        TESSERACT_QUALITY, TESSERACT_QUALITY_MIN)
+
+    res_text = ''
+    res = _get_text_by_max_conf(results) if results else None
+    if res is None or res.conf < 90:
+        lm = lambda arr: [r.results for r in arr]
+        tess_arr = lm(results1) + lm(results2) + lm(results)
+        tess_arr = sorted(tess_arr, key=lambda a: len(a), reverse=True)
+        res_text = create_str_from_frequency_dict(create_frequency_dict(tess_arr), tess_arr)
+        print('11111111111111111111111111111111111111111111', res_text)
+
+    if res_text.strip() != '':
+        results = [TesseractResp(res_text, 90, 2, cropped, [])]
+
 
     count6 = 0
     if not results or _get_text_by_max_conf(results).conf == 0:
@@ -278,18 +287,21 @@ def get_img_text_by_contours(img: np.ndarray,
             break
         cropped: np.ndarray = img[r.y:r.y + r.h, r.x:r.x + r.w]
         # saving(ROOT_DIR + '/tests/imgs/result', f"{count}_{''}_{time.time()}", '', cropped, False)
-        results, count_of_pass = _get_results_by_tesseract_configs(cropped)
-        text, conf, r_coef, frame = _get_text_by_max_conf(results) if results else ("", 0, 0, np.ndarray([]))
+        h, w, z = cropped.shape
+        if h > 0 and w > 0 and z > 0:
+            results, count_of_pass = _get_results_by_tesseract_configs(cropped)
+            text, conf, r_coef, frame, _ = _get_text_by_max_conf(results) if results else ("", 0, 0, np.ndarray([]))
 
-        text = fix_word(text)
+            text = fix_word(text)
 
-        #DEBUG
-        # if save_cropped_img_path_debug:
-            # _logger.debug(f"11111111111111111111111 {text}, conf={conf}, count_of_pass={count_of_pass}")
-        saving(ROOT_DIR + '/tests/imgs/result', f"{count}_{text}_{time.time()}", text, cropped, False)
+            #DEBUG
+            # if save_cropped_img_path_debug:
+                # _logger.debug(f"11111111111111111111111 {text}, conf={conf}, count_of_pass={count_of_pass}")
+            saving(ROOT_DIR + '/tests/imgs/result', f"{count}_{text}_{time.time()}", text, cropped, False)
 
-        if text != '':
             r.text = text
             rectangles_txt.append(r)
+        else:
+            _logger.warning(f"Failure to process cropped image, wrong shape <{cropped.shape}>")
 
     return rectangles_txt

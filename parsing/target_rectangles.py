@@ -126,9 +126,8 @@ def get_rect_by_contours(orig_img: np.ndarray, config, is_debug: bool = False) -
     """
     MAX_H_OF_WORD = config["env"]["MAX_H_OF_WORD"]
     MIN_H_OF_WORD = config["env"]["MIN_H_OF_WORD"]
-    MIN_W_OF_WORD = config["env"]["MIN_W_OF_WORD"]
-    MORPH_KERNEL_SIZE = 5
-    morph_kernel = np.ones((MORPH_KERNEL_SIZE, MORPH_KERNEL_SIZE))
+    # MORPH_KERNEL_SIZE = 5
+    # morph_kernel = np.ones((MORPH_KERNEL_SIZE, MORPH_KERNEL_SIZE))
 
     gray = cv2.cvtColor(orig_img, cv2.COLOR_BGR2GRAY)
     is_black_bg = False #_is_black_bg(gray)
@@ -136,28 +135,25 @@ def get_rect_by_contours(orig_img: np.ndarray, config, is_debug: bool = False) -
 
     rect_mask_img = _get_rect_lines(gray)
     np.place(gray, rect_mask_img, bg_color)
-    lines_img = _get_lines(gray)
-    np.place(gray, lines_img, bg_color)
+    # lines_img = _get_lines(gray)
+    # np.place(gray, lines_img, bg_color)
 
-    thresh_binary_param = cv2.THRESH_BINARY if is_black_bg else cv2.THRESH_BINARY_INV
+    thresh_binary_param = cv2.THRESH_BINARY #if is_black_bg else cv2.THRESH_BINARY_INV
     # ret, thresh = cv2.threshold(gray, 0, 255, cv2.THRESH_OTSU | thresh_binary_param)
     ret, thresh = cv2.threshold(gray, 220, 255, thresh_binary_param)
-    # ret, thresh1 = cv2.threshold(gray, 170, 255, thresh_binary_param)
 
-    dilate_img = cv2.dilate(thresh, kernel=morph_kernel, iterations=1)
+    # dilate_img = cv2.dilate(thresh, kernel=morph_kernel, iterations=1)
 
     contours_origin, _ = cv2.findContours(thresh, cv2.RETR_LIST, cv2.CHAIN_APPROX_NONE)
-    # contours_origin_external, _ = cv2.findContours(thresh1, cv2.RETR_EXTERNAL, cv2.CHAIN_APPROX_NONE)
 
-    contours_with_dilate, _ = cv2.findContours(dilate_img, cv2.RETR_EXTERNAL, cv2.CHAIN_APPROX_NONE)
+    # contours_with_dilate, _ = cv2.findContours(dilate_img, cv2.RETR_EXTERNAL, cv2.CHAIN_APPROX_NONE)
 
     orig_boxes_with_cnt: [(RectangleData, [[int, int]])] = _get_boxes_cnt(contours_origin,
                                                                           MAX_H_OF_WORD,
                                                                           MIN_H_OF_WORD)
-    # orig_boxes_with_cnt_external: [(RectangleData, [[int, int]])] = _get_boxes_cnt(contours_origin_external)
-    boxes_with_cnt: [(RectangleData, [[int, int]])] = _get_boxes_cnt(contours_with_dilate,
-                                                                     MAX_H_OF_WORD,
-                                                                     MIN_H_OF_WORD)
+    # boxes_with_cnt: [(RectangleData, [[int, int]])] = _get_boxes_cnt(contours_with_dilate,
+    #                                                                  MAX_H_OF_WORD,
+    #                                                                  MIN_H_OF_WORD)
 
     rect_possibly_contains_text = get_sentences2([o[0] for o in orig_boxes_with_cnt]) # []
     # for bc in boxes_with_cnt:
@@ -178,10 +174,10 @@ def get_rect_by_contours(orig_img: np.ndarray, config, is_debug: bool = False) -
     #     cv2.rectangle(orig_img, (r.x, r.y), (r.x + r.w, r.y + r.h), (255, 0, 0), 2)
     #
     # cv2.drawContours(orig_img, contours_with_dilate[-2:-1], -1, (255, 0, 0), 3)
-
+    #
     # cv2.namedWindow('Test', cv2.WINDOW_NORMAL)
     # cv2.resizeWindow("Test", 1700, 900)
-    # cv2.imshow("Test", orig_img)
+    # cv2.imshow("Test", thresh)
     # cv2.waitKey(0)
     # cv2.destroyAllWindows()
     return rect_possibly_contains_text

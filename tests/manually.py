@@ -8,7 +8,8 @@ from utility.rectangle_utils.sentences import get_sentences
 
 
 def test_get_rect_by_contours_manually(config):
-    img = cv2.imread(ROOT_DIR + "/tests/imgs/vtb_1.jpeg")
+    # img = cv2.imread(ROOT_DIR + "/tests/imgs/alfa/alfa_1.jpeg")
+    img = cv2.imread(ROOT_DIR + "/tests/imgs/tinkof/tinkof_1.jpeg")
 
     img_c = np.copy(img)
     img_cropped = cut_img(img, config)

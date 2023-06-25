@@ -5,11 +5,11 @@ from typing import List, Callable
 
 import numpy as np
 
-from models.types.additional_fields import SenderCardNumber, SenderName, RecipientName, RecipientPhone
+from models.types.additional_fields import SenderCardNumber, SenderName, RecipientName, RecipientPhone, DocNumber
 from models.types.base_check_type import BaseCheckType, NOT_DEFINED
 from models.data_classes import RectangleData
 # from parsing.parsing_func import process_rectangle_img
-from parsing.post_process import replace_spaces
+from parsing.post_process import replace_spaces, fix_amount, extract_last, extract_except_from_start, extract_digits
 from utility.comparison.comparation import is_different_text
 from utility.rectangle_utils.search_rect import find_rect_opt
 
@@ -22,6 +22,7 @@ class RaiffaizenType(BaseCheckType,
                      SenderName,
                      RecipientName,
                      RecipientPhone,
+                     DocNumber,
                      ):
     def __init__(self, rects: List[RectangleData], img: np.ndarray):
         self.rects = rects
@@ -29,27 +30,27 @@ class RaiffaizenType(BaseCheckType,
 
     @staticmethod
     def create(rects: List[RectangleData], img: np.ndarray):
-        texts = [r.text.lower().replace(' ', '') for r in rects]
-        keys = ['райффайзен', 'заявление']
-        for key in keys:
-            for t in texts:
-                if key in t:
-                    break
-            else:
-                return False
-        else:
-            return RaiffaizenType(rects, img).build
+        h, w, _ = img.shape
+        key = 'райффайзен'
+        for r in rects:
+            if key in replace_spaces(r.text).lower() and r.y < h*0.3:
+                return RaiffaizenType(rects, img).build
+        return False
 
     @staticmethod
-    def _parse_next_field_by_field_name(field_names: List[str],
-                                        rects: List[RectangleData],
-                                        extract_func: Callable,
-                                        ) -> str:
+    def _parse_field(field_names: List[str],
+                     rects: List[RectangleData],
+                     extract_func: Callable,
+                     ) -> str:
         for field_name in field_names:
             try:
-                for r in rects:
-                    if field_name in r.text:
-                        return extract_func(replace_spaces(r.text))
+                for i in range(len(rects)):
+                    if field_name in rects[i].text:
+                        if field_name == 'Получатель' or \
+                           field_name == 'Прошу' or field_name == 'осуществить' or field_name == 'моего' or \
+                           field_name == 'Заявление' or field_name == 'рублевый' or field_name == 'рублёвый':
+                            return extract_func(replace_spaces(rects[i + 1].text))
+                        return extract_func(replace_spaces(rects[i].text))
             except ValueError:
                 _logger.warning(f"Field <{field_name}> Not Found")
                 continue
@@ -59,16 +60,16 @@ class RaiffaizenType(BaseCheckType,
         return NOT_DEFINED
 
     def parse_sender_name(self):
-        SENDER_NAME = ['Плательщик', 'Плательшик']
-        self.sender_name = self._parse_next_field_by_field_name(SENDER_NAME, self.rects, extract_except_from_start(1))
+        SENDER_NAME = ['Плательщик']
+        self.sender_name = self._parse_field(SENDER_NAME, self.rects, extract_except_from_start(1))
 
     def parse_sender_card_number(self):
         SENDER_CARD_NUMBER: List[str] = ['Прошу', 'осуществить', 'моего']
-        self.sender_card_number = self._parse_next_field_by_field_name(SENDER_CARD_NUMBER, self.rects, extract_last)
+        self.sender_card_number = self._parse_field(SENDER_CARD_NUMBER, self.rects, extract_digits)
 
     def parse_recipient_name(self):
         RECIPIENT_NAME = 'Получатель'
-        self.recipient_name = self._parse_next_field_by_field_name([RECIPIENT_NAME], self.rects, extract_except_from_start(2))
+        self.recipient_name = self._parse_field([RECIPIENT_NAME], self.rects, extract_except_from_start(1))
 
     def parse_check_date(self):
         DATE = 'Дата'
@@ -78,20 +79,21 @@ class RaiffaizenType(BaseCheckType,
         #     self.check_date = _fix_time_of_str(extract_except_from_start(1)(res))
         # else:
         #     self.check_date = NOT_DEFINED
-        res = self._parse_next_field_by_field_name([DATE], self.rects, extract_except_from_start(1))
+        res = self._parse_field([DATE], self.rects, extract_except_from_start(1))
         self.check_date = _fix_time_of_str(res)
 
     def parse_amount(self):
-        SUMMA = ['Сумма перевода', 'Сумма']
-        self.amount = self._parse_next_field_by_field_name(SUMMA, self.rects, _extract_amount)
+        SUMMA = ['Сумма']
+        res = self._parse_field(SUMMA, self.rects, _extract_amount)
+        self.amount = fix_amount(res)
 
     def parse_document_number(self):
         DOC_NUMBER = ['Заявление', 'рублевый', 'рублёвый']
-        self.document_number = self._parse_next_field_by_field_name(DOC_NUMBER, self.rects, _extract_number)
+        self.document_number = self._parse_field(DOC_NUMBER, self.rects, _extract_number)
 
     def parse_recipient_phone(self):
         PHONE = ['Телефон']
-        self.recipient_phone = self._parse_next_field_by_field_name(PHONE, self.rects, extract_last)
+        self.recipient_phone = self._parse_field(PHONE, self.rects, extract_last)
 
     @property
     def build(self):
@@ -152,29 +154,8 @@ def _extract_number(raw_str: str) -> str:
         res_arr[-1] = fixed_time
         fixed_number = _fix_number(res_arr[0])
         res_arr[0] = fixed_number
-    return ' '.join(res_arr)
-
-
-def extract_except_from_start(number_excluded: int) -> Callable:
-    def body(raw_str: str) -> str:
-        str_origin = replace_spaces(raw_str)
-        arr = str_origin.split(' ')
-        if len(arr) > number_excluded:
-            res_arr = arr[number_excluded:]
-        else:
-            res_arr = [NOT_DEFINED]
         return ' '.join(res_arr)
-    return body
-
-
-def extract_last(raw_str: str) -> str:
-    str_origin = replace_spaces(raw_str)
-    arr = str_origin.split(' ')
-    if len(arr) > 1:
-        res_arr = arr[-1]
-    else:
-        res_arr = [NOT_DEFINED]
-    return ''.join(res_arr)
+    return NOT_DEFINED
 
 
 def _extract_amount(raw_str: str) -> str:

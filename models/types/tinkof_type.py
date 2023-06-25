@@ -1,12 +1,14 @@
+import datetime
 import logging
 from dataclasses import dataclass
 from typing import List
 
 import numpy as np
 
-from models.types.additional_fields import SenderName, RecipientName, RecipientCardNumber
+from models.types.additional_fields import SenderName, RecipientName, RecipientCardNumber, DocNumber
 from models.types.base_check_type import BaseCheckType, NOT_DEFINED
 from models.data_classes import RectangleData
+from parsing.post_process import fix_amount, replace_spaces
 from utility.comparison.comparation import is_different_text
 
 _logger = logging.getLogger("app")
@@ -17,6 +19,7 @@ class TinkoffType(BaseCheckType,
                   SenderName,
                   RecipientName,
                   RecipientCardNumber,
+                  DocNumber,
                   ):
     def __init__(self, rects: List[RectangleData], img: np.ndarray):
         self.rects = rects
@@ -36,7 +39,7 @@ class TinkoffType(BaseCheckType,
             return TinkoffType(rects, img).build
 
     @staticmethod
-    def _parse_next_field_by_field_name(field_names: List[str], rects: List[RectangleData]) -> str:
+    def _parse_field(field_names: List[str], rects: List[RectangleData]) -> str:
         for field_name in field_names:
             try:
                 for i in range(len(rects)):
@@ -44,9 +47,16 @@ class TinkoffType(BaseCheckType,
                     if field_name == 'Квитанция №' and 'Квитанция №' in curr_rect.text:
                         return curr_rect.text.replace('Квитанция №', '').strip()
 
-                    if not is_different_text(curr_rect.text, field_name, 7):
-                        if field_name == 'тинькофф':
-                            return rects[i + 1].text
+                    if replace_spaces(field_name).lower() in replace_spaces(curr_rect.text).lower():
+                        if field_name == 'Итого':
+                            for j in [1, 2]:
+                                try:
+                                    date = datetime.datetime.strptime(rects[i - j].text, '%d.%m.%Y %H:%M:%S')
+                                    return date.strftime('%d.%m.%Y %H:%M:%S')
+                                except Exception as e:
+                                    _logger.warning(f'Failure to parse date from <{rects[i - j].text}>, error: {e}')
+                                    continue
+                            return NOT_DEFINED
 
                         h = curr_rect.h / 2
                         prev_rect = rects[i - 1]
@@ -66,27 +76,28 @@ class TinkoffType(BaseCheckType,
 
     def parse_sender_name(self):
         SENDER_NAME = 'Отправитель'
-        self.sender_name = self._parse_next_field_by_field_name([SENDER_NAME], self.rects)
+        self.sender_name = self._parse_field([SENDER_NAME], self.rects)
 
     def parse_recipient_name(self):
         RECIPIENT_NAME = 'Получатель'
-        self.recipient_name = self._parse_next_field_by_field_name([RECIPIENT_NAME], self.rects)
+        self.recipient_name = self._parse_field([RECIPIENT_NAME], self.rects)
 
     def parse_recipient_card_number(self):
-        RECIPIENT_CARD_NUMBER = ['Карта получателя', 'Телефон получателя']
-        self.recipient_card_number =  self._parse_next_field_by_field_name(RECIPIENT_CARD_NUMBER, self.rects)
+        RECIPIENT_CARD_NUMBER = ['Карта получателя', 'Телефон получателя', 'получателя Карта', 'получателя Телефон']
+        self.recipient_card_number =  self._parse_field(RECIPIENT_CARD_NUMBER, self.rects)
 
     def parse_check_date(self):
-        PREV_FIELD = 'тинькофф'
-        self.check_date = self._parse_next_field_by_field_name([PREV_FIELD], self.rects)
+        DATE = 'Итого'
+        self.check_date = self._parse_field([DATE], self.rects)
 
     def parse_amount(self):
         SUMMA = ['Сумма']
-        self.amount = self._parse_next_field_by_field_name(SUMMA, self.rects)
+        res = self._parse_field(SUMMA, self.rects)
+        self.amount = fix_amount(res)
 
     def parse_document_number(self):
         DOC_NUMBER = 'Квитанция №'
-        self.document_number = self._parse_next_field_by_field_name([DOC_NUMBER], self.rects)
+        self.document_number = self._parse_field([DOC_NUMBER], self.rects)
 
     @property
     def build(self):
