@@ -53,4 +53,4 @@ def process_img(img: np.ndarray) -> dict:
 
 if __name__ == "__main__":
     # main(ROOT_DIR + "/tests/imgs/alfa/alfa_1.jpeg")
-    main(ROOT_DIR + "/tests/imgs/alfa/alfa_3.jpg")
+    main(ROOT_DIR + "/tests/imgs/alfa/alfa_1.jpeg")

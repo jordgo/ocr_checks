@@ -79,9 +79,13 @@ def prepared_img(cropped: np.ndarray, resize_coeff, is_digits: bool, is_bold: bo
     if is_digits:
         ret, thresh = cv2.threshold(resized, 220, 255, 0)  # , cv2.THRESH_OTSU | cv2.THRESH_BINARY_INV)
     elif is_bold:
-        ret, thresh = cv2.threshold(resized, 220, 255, 0)  # , cv2.THRESH_OTSU | cv2.THRESH_BINARY_INV)
-        kernel_size = 5
+        kernel_size = 3
         morph_kernel = np.ones((kernel_size, kernel_size))
+        sharp_filter = np.array([[-1, -1, -1], [-1, 9, -1], [-1, -1, -1]])
+        sharpen_img = cv2.filter2D(resized, ddepth=-1, kernel=sharp_filter)
+        dilate = cv2.dilate(sharpen_img, kernel=morph_kernel, iterations=1)
+
+        ret, thresh = cv2.threshold(sharpen_img, 170, 255, 0)  # , cv2.THRESH_OTSU | cv2.THRESH_BINARY_INV)
         thresh = cv2.dilate(thresh, kernel=morph_kernel, iterations=1)
     else:
         blur = cv2.medianBlur(resized, 5)
@@ -98,7 +102,7 @@ def prepared_img(cropped: np.ndarray, resize_coeff, is_digits: bool, is_bold: bo
         ret, thresh = cv2.threshold(blur1, 220, 255, 0)#, cv2.THRESH_OTSU | cv2.THRESH_BINARY_INV)
         # dilate_img1 = cv2.dilate(thresh, kernel=morph_kernel, iterations=1)
 
-    # cv2.imshow("Test", resized)
+    # cv2.imshow("Test", thresh)
     # cv2.waitKey(0)
     # cv2.destroyAllWindows()
 
@@ -216,15 +220,6 @@ def _get_results_by_tesseract_configs(cropped: np.ndarray) -> tuple:
         results2, count2 = _get_results(TESSERACT_CONF_DIGITS, cropped, True, False,
                                        TESSERACT_DIGITS_QUALITY, TESSERACT_DIGITS_QUALITY_MIN)
 
-    # h, w, _ = np.shape(cropped)
-    # cut_cropped: np.ndarray = cropped[0:h, 0:int(w - w*0.2)]
-    # res2 = _get_text_by_max_conf(results2) if results2 else None
-    # results3 = []
-    # count4 = 0
-    # if (res2 is None or res2.conf < 90) and (len(res1.text) > 0 and res1.text.replace(' ', '').lower()[-1] == 'р'):
-    #     results3, count4 = _get_results(TESSERACT_CONF_DIGITS, cut_cropped, True, False,
-    #                                    TESSERACT_DIGITS_QUALITY, TESSERACT_DIGITS_QUALITY_MIN)
-
     results = [_get_text_by_max_conf(results2 + results1)]
 
     count5 = 0
@@ -238,7 +233,7 @@ def _get_results_by_tesseract_configs(cropped: np.ndarray) -> tuple:
     res = _get_text_by_max_conf(results) if results else None
     if res is None or res.conf < 90:
         lm = lambda arr: [r.results for r in arr]
-        tess_arr = lm(results1) + lm(results2) + lm(results)
+        tess_arr = lm(results) + lm(results1) + lm(results2)
         tess_arr = sorted(tess_arr, key=lambda a: len(a), reverse=True)
         res_text = create_str_from_frequency_dict(create_frequency_dict(tess_arr), tess_arr)
         print('11111111111111111111111111111111111111111111', res_text)
@@ -246,6 +241,10 @@ def _get_results_by_tesseract_configs(cropped: np.ndarray) -> tuple:
     if res_text.strip() != '':
         results = [TesseractResp(res_text, 90, 2, cropped, [])]
 
+    count6 = 0
+    if not results or _get_text_by_max_conf(results).conf == 0:
+        results, count6 = _get_results(TESSERACT_CONF_DEFAULT, cropped_origin, False, True,
+                                       TESSERACT_QUALITY, TESSERACT_QUALITY_MIN)
 
     count6 = 0
     if not results or _get_text_by_max_conf(results).conf == 0:
@@ -256,9 +255,6 @@ def _get_results_by_tesseract_configs(cropped: np.ndarray) -> tuple:
         results, count7 = _parse_with_easy_ocr(cropped, True)
 
     count = 0 #count1 + count2 + count5 # + count3 + count4
-
-    # if get_text_by_max_conf(results)[1] == 0:
-    #     results = get_results(TESSERACT_CONF_SYMBOLS)
 
     return results, count
 

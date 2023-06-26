@@ -109,8 +109,20 @@ def create_frequency_dict(arr: List[List[str]]) -> Dict[FrequencyKey, int]:
                         break
                 else:
                     frequency_dict[FrequencyKey(word, count)] = 1
-    _logger.info(f"Frequency Dict {frequency_dict}")
-    return frequency_dict
+    frequency_dict_sort = {k: v for k, v in sorted(frequency_dict.items(), key=lambda item: item[1], reverse=True)}
+    _logger.info(f"Frequency DictSorted {frequency_dict_sort}")
+    # frequency_dict_filtered = {}
+    # for d in frequency_dict_sort:
+    #     keys = frequency_dict_filtered.keys()
+    #     orders: List[int] = [k.order for k in keys]
+    #     if len(frequency_dict_filtered) == 0:
+    #         frequency_dict_filtered[d] = frequency_dict_sort[d]
+    #     elif d.order not in orders:
+    #         frequency_dict_filtered[d] = frequency_dict_sort[d]
+    #     else:
+    #         continue
+    # _logger.info(f"Frequency DictFiltered {frequency_dict_filtered}")
+    return frequency_dict_sort
 
 
 def create_str_from_frequency_dict(f_dict: Dict[FrequencyKey, int], arr: List[List[str]]) -> str:
