@@ -6,7 +6,6 @@ from typing import List
 
 import cv2
 import numpy as np
-from dateutil.parser import parser
 
 from models.types.additional_fields import SenderName, RecipientName, RecipientCardNumber, SenderCardNumber, \
     RecipientPhone, SBPID
