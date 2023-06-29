@@ -20,6 +20,7 @@ NOT_DEFINED = 'not defined'
 class BaseCheckType(abc.ABC):
     check_date: str = None
     amount: str = None
+    bank: str = None
 
     @abc.abstractmethod
     def parse_check_date(self):

@@ -6,6 +6,7 @@ from typing import List
 import numpy as np
 
 from models.types.additional_fields import SenderName, RecipientName, RecipientCardNumber, DocNumber
+from models.types.bank_types import BankType
 from models.types.base_check_type import BaseCheckType, NOT_DEFINED
 from models.data_classes import RectangleData
 from parsing.post_process import fix_amount, replace_spaces
@@ -21,6 +22,8 @@ class TinkoffType(BaseCheckType,
                   RecipientCardNumber,
                   DocNumber,
                   ):
+    bank = BankType.TINKOFF.value
+
     def __init__(self, rects: List[RectangleData], img: np.ndarray):
         self.rects = rects
         self.img = img

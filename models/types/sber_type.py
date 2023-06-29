@@ -5,6 +5,7 @@ from typing import List
 import numpy as np
 
 from models.types.additional_fields import SenderCardNumber, SenderName, RecipientName, RecipientCardNumber, DocNumber
+from models.types.bank_types import BankType
 from models.types.base_check_type import BaseCheckType, NOT_DEFINED
 from models.data_classes import RectangleData
 from parsing.post_process import fix_amount, clear_card_number, replace_spaces
@@ -21,6 +22,8 @@ class SberType(BaseCheckType,
                RecipientCardNumber,
                DocNumber,
                ):
+    bank = BankType.SBER.value
+
     def __init__(self, rects: List[RectangleData], img: np.ndarray):
         self.rects = rects
         self.img = img

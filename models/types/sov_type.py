@@ -8,6 +8,7 @@ import numpy as np
 
 from models.types.additional_fields import SenderName, RecipientName, RecipientCardNumber, SenderCardNumber, \
     RecipientPhone, SBPID, DocNumber
+from models.types.bank_types import BankType
 from models.types.base_check_type import BaseCheckType, NOT_DEFINED
 from models.data_classes import RectangleData
 from parsing.parsing_func import process_rectangle_img
@@ -25,6 +26,8 @@ class SovType(BaseCheckType,
               RecipientCardNumber,
               DocNumber,
               ):
+    bank = BankType.SOV.value
+
     def __init__(self, rects: List[RectangleData], img: np.ndarray):
         self.rects = rects
         self.img = img

@@ -293,7 +293,7 @@ def get_img_text_by_contours(img: np.ndarray,
             #DEBUG
             # if save_cropped_img_path_debug:
                 # _logger.debug(f"11111111111111111111111 {text}, conf={conf}, count_of_pass={count_of_pass}")
-            saving(ROOT_DIR + '/tests/imgs/result', f"{count}_{text}_{time.time()}", text, cropped, False)
+            #saving(ROOT_DIR + '/tests/imgs/result', f"{count}_{text}_{time.time()}", text, cropped, False)
 
             r.text = text
             rectangles_txt.append(r)

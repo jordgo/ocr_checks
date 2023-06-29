@@ -6,6 +6,7 @@ import numpy as np
 
 from models.types.additional_fields import SenderName, RecipientName, RecipientCardNumber, SenderCardNumber, \
     RecipientPhone, SBPID
+from models.types.bank_types import BankType
 from models.types.base_check_type import BaseCheckType, NOT_DEFINED
 from models.data_classes import RectangleData
 from parsing.post_process import replace_spaces, fix_amount, clear_card_number
@@ -22,6 +23,8 @@ class VTBType(BaseCheckType,
               RecipientPhone,
               SBPID,
               ):
+    bank = BankType.VTB.value
+
     def __init__(self, rects: List[RectangleData], img: np.ndarray):
         self.rects = rects
         self.img = img

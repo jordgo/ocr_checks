@@ -6,6 +6,7 @@ from typing import List, Callable
 import numpy as np
 
 from models.types.additional_fields import SenderCardNumber, SenderName, RecipientName, RecipientPhone, DocNumber
+from models.types.bank_types import BankType
 from models.types.base_check_type import BaseCheckType, NOT_DEFINED
 from models.data_classes import RectangleData
 # from parsing.parsing_func import process_rectangle_img
@@ -24,6 +25,8 @@ class RaiffaizenType(BaseCheckType,
                      RecipientPhone,
                      DocNumber,
                      ):
+    bank = BankType.RAIFAIZEN.value
+
     def __init__(self, rects: List[RectangleData], img: np.ndarray):
         self.rects = rects
         self.img = img
@@ -65,7 +68,7 @@ class RaiffaizenType(BaseCheckType,
 
     def parse_sender_card_number(self):
         SENDER_CARD_NUMBER: List[str] = ['Прошу', 'осуществить', 'моего']
-        self.sender_card_number = self._parse_field(SENDER_CARD_NUMBER, self.rects, extract_digits)
+        self.sender_card_number = self._parse_field(SENDER_CARD_NUMBER, self.rects, extract_card_number)
 
     def parse_recipient_name(self):
         RECIPIENT_NAME = 'Получатель'
@@ -166,3 +169,18 @@ def _extract_amount(raw_str: str) -> str:
     else:
         res = NOT_DEFINED
     return res
+
+
+def extract_card_number(raw_str: str) -> str:
+    arr = raw_str.split(' ')
+    digits = []
+    for s in arr:
+        for w in s:
+            if not w.isdigit():
+                break
+        else:
+            digits.append(s)
+    if len(digits) > 0:
+        d_sorted = sorted(digits, key=lambda d: len(d), reverse=True)
+        return d_sorted[0]
+    return NOT_DEFINED
