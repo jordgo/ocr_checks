@@ -1,5 +1,8 @@
 import logging
+import queue
+import signal
 import subprocess
+import threading
 import time
 from typing import List, Tuple
 
@@ -10,7 +13,7 @@ from pytesseract import pytesseract
 
 from definition import ROOT_DIR
 from parsing.post_process import fix_word, create_str_from_frequency_dict, create_frequency_dict
-from utility.decors.prdecorators import print_time_of_script
+from utility.decors.prdecorators import print_time_of_script, timeout
 from models.data_classes import TesseractResp, RectangleData
 from utility.saving.save_to_dir import saving
 
@@ -192,7 +195,20 @@ def _parse_with_easy_ocr(cropped: np.ndarray, is_bold: bool) -> tuple:
             kernel_size = 5
             morph_kernel = np.ones((kernel_size, kernel_size))
             resized = cv2.dilate(resized, kernel=morph_kernel, iterations=1)
-        result1 = easyocr_reader.readtext(resized, detail=1)
+
+        result1 = []
+        temp_queue = queue.Queue()
+        def easy_ocr_func(q, image, reader):
+            res = reader.readtext(image=image, detail=1)
+            q.put(res)
+        t = threading.Thread(target=easy_ocr_func, args=(temp_queue, resized, easyocr_reader))
+        t.start()
+
+        try:
+            result1 = temp_queue.get(timeout=2)
+        except Exception:
+            _logger.warning("EASY OCR TIMEOUT")
+
         filtered_result1 = [t for t in result1 if t[2] > EASY_OCR_CONF]
         concat_res = ' '.join([t[1] for t in filtered_result1])
         _logger.info(f'Easy OCR: {result1}')
@@ -249,6 +265,7 @@ def _get_results_by_tesseract_configs(cropped: np.ndarray) -> tuple:
     count6 = 0
     if not results or _get_text_by_max_conf(results).conf == 0:
         results, count6 = _parse_with_easy_ocr(cropped, False)
+    print('66666666666666666666666666666666666')
 
     count7 = 0
     if not results or _get_text_by_max_conf(results).conf == 0:

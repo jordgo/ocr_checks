@@ -54,3 +54,4 @@ tests/results/
 tests/imgs/result/
 *.pyc
 utility/tessdata/training_data/
+*.log.*
