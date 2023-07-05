@@ -13,7 +13,7 @@ from models.data_classes import RectangleData
 _logger = logging.getLogger("app")
 
 
-NOT_DEFINED = 'not defined'
+NOT_DEFINED = None #'not defined'
 
 
 @dataclass
