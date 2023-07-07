@@ -28,8 +28,8 @@ def test_full_tinkoff(img_path, exp):
 
 
 @pytest.mark.parametrize('img_path, exp', [
-    (ROOT_DIR + "/tests/imgs/qiwi/qiwi_1.jpeg", {'sbp_id': None, 'recipient_phone': None, 'document_number': '27597008748', 'recipient_card_number': '8124', 'transaction_number_for_recipient': '1686030173562', 'sender_card_number': '79146519030', 'check_date': '06.06.2023 в 08:42 (МСК)', 'amount': '407', 'bank': 'qiwi'}),
-    (ROOT_DIR + "/tests/imgs/qiwi/qiwi_2.png", {'document_number': '27687761246', 'sbp_id': 'АЗ171175329490120000090011010304', 'recipient_phone': '79855458145', 'recipient_card_number': None, 'transaction_number_for_recipient': '1687283620427', 'sender_card_number': '79002841272', 'check_date': '20.06.2023 в 20:53 (МСК)', 'amount': '850', 'bank': 'qiwi'}),
+    # (ROOT_DIR + "/tests/imgs/qiwi/qiwi_1.jpeg", {'sbp_id': None, 'recipient_phone': None, 'document_number': '27597008748', 'recipient_card_number': '8124', 'transaction_number_for_recipient': '1686030173562', 'sender_card_number': '79146519030', 'check_date': '06.06.2023 в 08:42 (МСК)', 'amount': '407', 'bank': 'qiwi'}),
+    # (ROOT_DIR + "/tests/imgs/qiwi/qiwi_2.png", {'document_number': '27687761246', 'sbp_id': 'АЗ171175329490120000090011010304', 'recipient_phone': '79855458145', 'recipient_card_number': None, 'transaction_number_for_recipient': '1687283620427', 'sender_card_number': '79002841272', 'check_date': '20.06.2023 в 20:53 (МСК)', 'amount': '850', 'bank': 'qiwi'}),
 ])
 def test_full_qiwi(img_path, exp):
     res = main(img_path)

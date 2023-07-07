@@ -5,7 +5,7 @@ from typing import List
 import numpy as np
 
 from models.types.additional_fields import SenderCardNumber, TransactionNumberForRecipient, RecipientCardNumber, \
-    DocNumber, RecipientPhone, SBPID
+    DocNumber, RecipientPhone, SBPID, Itogo, Commission
 from models.types.bank_types import BankType
 from models.types.base_check_type import BaseCheckType, NOT_DEFINED
 from models.data_classes import RectangleData
@@ -22,6 +22,8 @@ class QiwiType(BaseCheckType,
                RecipientCardNumber,
                RecipientPhone,
                SBPID,
+               Itogo,
+               Commission,
                DocNumber):
     bank = BankType.QIWI.value
 
@@ -31,11 +33,12 @@ class QiwiType(BaseCheckType,
 
     @staticmethod
     def create(rects: List[RectangleData], img: np.ndarray):
-        texts = [r.text.lower().replace(' ', '') for r in rects]
-        keys = ['киви', 'кошелька']
+        # texts = [r.text.lower().replace(' ', '') for r in rects]
+        h, w, _ = img.shape
+        keys = ['киви', 'кошел']
         for key in keys:
-            for t in texts:
-                if key in t:
+            for r in rects:
+                if key in r.text: # and r.y < h*0.3:
                     break
             else:
                 return False
@@ -77,6 +80,9 @@ class QiwiType(BaseCheckType,
                         return neighb_rect_part1.text + neighb_rect_part2_txt
 
                     if replace_spaces(field_name).lower() in replace_spaces(curr_rect.text).lower():
+                        if field_name == 'Сумма':
+                            return curr_rect.text
+
                         neighb_rect = neighboring_rect(self.rects, curr_rect, i)
                         if neighb_rect is None:
                             return NOT_DEFINED
@@ -106,9 +112,27 @@ class QiwiType(BaseCheckType,
         self.check_date = self._parse_field([CHECK_DATA])
 
     def parse_amount(self):
-        SUMMA = ['Итого']
+        SUMMA = ['Сумма']
         res = self._parse_field(SUMMA)
-        self.amount = fix_amount(res)
+        arr = res.split('Сумма')
+        arr_len = len(arr)
+        if arr_len == 0:
+            parse_res = ''
+        elif arr_len == 1:
+            parse_res = arr[0]
+        else:
+            parse_res = ''.join(arr[1:])
+        self.amount = ''.join([s for s in parse_res if s.isdigit() or s == '.' or s == ','])
+
+    def parse_itogo(self):
+        ITOGO = ['Итого']
+        res = self._parse_field(ITOGO)
+        self.itogo = fix_amount(res)
+
+    def parse_commission(self):
+        COMMISSION = 'Комиссия'
+        res = self._parse_field([COMMISSION])
+        self.commission = fix_amount(res)
 
     def parse_document_number(self):
         DOC_NUMBER = ['квитанции']
@@ -129,6 +153,8 @@ class QiwiType(BaseCheckType,
         self.parse_recipient_phone()
         self.parse_check_date()
         self.parse_amount()
+        self.parse_itogo()
+        self.parse_commission()
         self.parse_document_number()
         self.parse_transaction_number_for_recipient()
         self.parse_sbp_id()

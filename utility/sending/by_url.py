@@ -1,4 +1,6 @@
 import logging
+import threading
+import time
 
 import requests
 
@@ -17,3 +19,9 @@ def send_result(url: str, data: dict):
         _logger.info(f"Sending successfully to url: <{url}>, data: <{data}>")
     else:
         _logger.error(f"Sending Failure, res={res}, url: <{url}>, data: <{data}>")
+
+
+def send_result_parallel(url: str, data: dict):
+    time.sleep(0.1)
+    t = threading.Thread(target=send_result, kwargs={'url': url, 'data': data})
+    t.start()

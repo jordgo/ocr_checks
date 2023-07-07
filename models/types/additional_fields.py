@@ -72,3 +72,21 @@ class DocNumber(abc.ABC):
     @abc.abstractmethod
     def parse_document_number(self):
         return NotImplemented
+
+
+@dataclass
+class Itogo(abc.ABC):
+    itogo: str = None
+
+    @abc.abstractmethod
+    def parse_itogo(self):
+        return NotImplemented
+
+
+@dataclass
+class Commission(abc.ABC):
+    commission: str = None
+
+    @abc.abstractmethod
+    def parse_commission(self):
+        return NotImplemented
