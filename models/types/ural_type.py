@@ -7,7 +7,7 @@ import cv2
 import numpy as np
 
 from models.types.additional_fields import SenderName, RecipientName, RecipientCardNumber, SenderCardNumber, \
-    RecipientPhone, SBPID, DocNumber
+    RecipientPhone, SBPID, DocNumber, Commission, Itogo
 from models.types.bank_types import BankType
 from models.types.base_check_type import BaseCheckType, NOT_DEFINED
 from models.data_classes import RectangleData
@@ -26,6 +26,8 @@ class UralType(BaseCheckType,
                RecipientName,
                RecipientPhone,
                SBPID,
+               Itogo,
+               Commission,
                DocNumber,
               ):
     bank = BankType.URAL.value
@@ -96,6 +98,16 @@ class UralType(BaseCheckType,
         SBP = 'Идентификатор'
         self.sbp_id = self._parse_field([SBP])
 
+    def parse_itogo(self):
+        ITOGO = ['Итог']
+        res = self._parse_field(ITOGO)
+        self.itogo = fix_amount(res)
+
+    def parse_commission(self):
+        COMMISSION = 'Комиссия'
+        res = self._parse_field([COMMISSION])
+        self.commission = ''.join([s for s in res if s.isdigit() or s == '.' or s == ','])
+
     @property
     def build(self):
         self.parse_sender_name()
@@ -103,6 +115,8 @@ class UralType(BaseCheckType,
         self.parse_recipient_phone()
         self.parse_check_date()
         self.parse_amount()
+        self.parse_itogo()
+        self.parse_commission()
         self.parse_document_number()
         self.parse_sbp_id()
         return self

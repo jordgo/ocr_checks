@@ -7,7 +7,7 @@ import cv2
 import numpy as np
 
 from models.types.additional_fields import SenderName, RecipientName, RecipientCardNumber, SenderCardNumber, \
-    RecipientPhone, SBPID, DocNumber
+    RecipientPhone, SBPID, DocNumber, Commission
 from models.types.bank_types import BankType
 from models.types.base_check_type import BaseCheckType, NOT_DEFINED
 from models.data_classes import RectangleData
@@ -24,6 +24,7 @@ _logger = logging.getLogger("app")
 class SovType(BaseCheckType,
               SenderCardNumber,
               RecipientCardNumber,
+              Commission,
               DocNumber,
               ):
     bank = BankType.SOV.value
@@ -80,13 +81,18 @@ class SovType(BaseCheckType,
 
     def parse_amount(self):
         SUMMA = ['Сумма']
-        res = self._parse_field(SUMMA, lambda res: ''.join([s for s in res if s.isdigit()]))
+        res = self._parse_field(SUMMA, lambda res: ''.join([s for s in res if s.isdigit() or s == '.' or s == ',']))
         self.amount = fix_amount(res)
 
     def parse_document_number(self):
         DOC_NUMBER = 'документа'
         res = self._parse_field([DOC_NUMBER], extract_last)
         self.document_number = res #''.join([s for s in res if s.isdigit()])
+
+    def parse_commission(self):
+        COMMISSION = 'Комиссия'
+        res = self._parse_field([COMMISSION], lambda res: ''.join([s for s in res if s.isdigit() or s == '.' or s == ',']))
+        self.commission = res
 
     @property
     def build(self):
@@ -95,6 +101,7 @@ class SovType(BaseCheckType,
         self.parse_check_date()
         self.parse_amount()
         self.parse_document_number()
+        self.parse_commission()
         return self
 
 

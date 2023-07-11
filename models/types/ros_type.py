@@ -42,7 +42,8 @@ class RosType(BaseCheckType,
         key = 'росбанк'
         for r in rects:
             if key in replace_spaces(r.text).lower() and r.y < h*0.3:
-                return RosType(rects, img).build
+                res = RosType(rects, img).build
+                return res
         return False
 
     def _parse_field(self, field_names: List[str]) -> str:

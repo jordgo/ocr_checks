@@ -5,7 +5,7 @@ from typing import List
 import numpy as np
 
 from models.types.additional_fields import SenderName, RecipientName, RecipientCardNumber, SenderCardNumber, \
-    RecipientPhone, SBPID
+    RecipientPhone, SBPID, Commission
 from models.types.bank_types import BankType
 from models.types.base_check_type import BaseCheckType, NOT_DEFINED
 from models.data_classes import RectangleData
@@ -21,6 +21,7 @@ class VTBType(BaseCheckType,
               SenderCardNumber,
               RecipientName,
               RecipientPhone,
+              Commission,
               SBPID,
               ):
     bank = BankType.VTB.value
@@ -97,6 +98,11 @@ class VTBType(BaseCheckType,
         res = self._parse_field(SUMMA)
         self.amount = fix_amount(res)
 
+    def parse_commission(self):
+        COMMISSION = 'Комиссия'
+        res = self._parse_field([COMMISSION]).replace('О', '0')
+        self.commission = ''.join([s for s in res if s.isdigit() or s == '.' or s == ','])
+
     def parse_sbp_id(self):
         SBP_ID = 'операции в СБП'
         self.sbp_id = self._parse_field([SBP_ID])
@@ -109,5 +115,6 @@ class VTBType(BaseCheckType,
         self.parse_recipient_phone()
         self.parse_check_date()
         self.parse_amount()
+        self.parse_commission()
         self.parse_sbp_id()
         return self

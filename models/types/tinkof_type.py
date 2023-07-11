@@ -100,7 +100,7 @@ class TinkoffType(BaseCheckType,
     def parse_amount(self):
         SUMMA = ['Сумма']
         res = self._parse_field(SUMMA)
-        self.amount = fix_amount(res)
+        self.amount = ''.join([s for s in res if s.isdigit() or s == '.' or s == ','])
 
     def parse_document_number(self):
         DOC_NUMBER = 'Квитанция №'

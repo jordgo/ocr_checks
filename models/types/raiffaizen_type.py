@@ -40,20 +40,18 @@ class RaiffaizenType(BaseCheckType,
                 return RaiffaizenType(rects, img).build
         return False
 
-    @staticmethod
-    def _parse_field(field_names: List[str],
-                     rects: List[RectangleData],
+    def _parse_field(self, field_names: List[str],
                      extract_func: Callable,
                      ) -> str:
         for field_name in field_names:
             try:
-                for i in range(len(rects)):
-                    if field_name in rects[i].text:
+                for i in range(len(self.rects)):
+                    if field_name in self.rects[i].text:
                         if field_name == 'Получатель' or \
                            field_name == 'Прошу' or field_name == 'осуществить' or field_name == 'моего' or \
                            field_name == 'Заявление' or field_name == 'рублевый' or field_name == 'рублёвый':
-                            return extract_func(replace_spaces(rects[i + 1].text))
-                        return extract_func(replace_spaces(rects[i].text))
+                            return extract_func(replace_spaces(self.rects[i + 1].text))
+                        return extract_func(replace_spaces(self.rects[i].text))
             except ValueError:
                 _logger.warning(f"Field <{field_name}> Not Found")
                 continue
@@ -64,15 +62,15 @@ class RaiffaizenType(BaseCheckType,
 
     def parse_sender_name(self):
         SENDER_NAME = ['Плательщик']
-        self.sender_name = self._parse_field(SENDER_NAME, self.rects, extract_except_from_start(1))
+        self.sender_name = self._parse_field(SENDER_NAME, extract_except_from_start(1))
 
     def parse_sender_card_number(self):
         SENDER_CARD_NUMBER: List[str] = ['Прошу', 'осуществить', 'моего']
-        self.sender_card_number = self._parse_field(SENDER_CARD_NUMBER, self.rects, extract_card_number)
+        self.sender_card_number = self._parse_field(SENDER_CARD_NUMBER, extract_card_number)
 
     def parse_recipient_name(self):
         RECIPIENT_NAME = 'Получатель'
-        self.recipient_name = self._parse_field([RECIPIENT_NAME], self.rects, extract_except_from_start(1))
+        self.recipient_name = self._parse_field([RECIPIENT_NAME], extract_except_from_start(1))
 
     def parse_check_date(self):
         DATE = 'Дата'
@@ -82,21 +80,21 @@ class RaiffaizenType(BaseCheckType,
         #     self.check_date = _fix_time_of_str(extract_except_from_start(1)(res))
         # else:
         #     self.check_date = NOT_DEFINED
-        res = self._parse_field([DATE], self.rects, extract_except_from_start(1))
+        res = self._parse_field([DATE], extract_except_from_start(1))
         self.check_date = _fix_time_of_str(res)
 
     def parse_amount(self):
         SUMMA = ['Сумма']
-        res = self._parse_field(SUMMA, self.rects, _extract_amount)
+        res = self._parse_field(SUMMA, _extract_amount)
         self.amount = fix_amount(res)
 
     def parse_document_number(self):
         DOC_NUMBER = ['Заявление', 'рублевый', 'рублёвый']
-        self.document_number = self._parse_field(DOC_NUMBER, self.rects, _extract_number)
+        self.document_number = self._parse_field(DOC_NUMBER, _extract_number)
 
     def parse_recipient_phone(self):
         PHONE = ['Телефон']
-        self.recipient_phone = self._parse_field(PHONE, self.rects, extract_last)
+        self.recipient_phone = self._parse_field(PHONE, extract_last)
 
     @property
     def build(self):

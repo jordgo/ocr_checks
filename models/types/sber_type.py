@@ -5,7 +5,7 @@ from typing import List
 import numpy as np
 
 from models.types.additional_fields import SenderCardNumber, SenderName, RecipientName, RecipientCardNumber, DocNumber, \
-    RecipientPhone
+    RecipientPhone, Commission
 from models.types.bank_types import BankType
 from models.types.base_check_type import BaseCheckType, NOT_DEFINED
 from models.data_classes import RectangleData
@@ -22,6 +22,7 @@ class SberType(BaseCheckType,
                RecipientName,
                RecipientCardNumber,
                RecipientPhone,
+               Commission,
                DocNumber,
                ):
     bank = BankType.SBER.value
@@ -85,6 +86,11 @@ class SberType(BaseCheckType,
         res = self._parse_field(SUMMA)
         self.amount = fix_amount(res)
 
+    def parse_commission(self):
+        COMMISSION = 'Комиссия'
+        res = self._parse_field([COMMISSION])
+        self.commission = fix_amount(res)
+
     def parse_document_number(self):
         DOC_NUMBER = 'документа'
         self.document_number = self._parse_field([DOC_NUMBER])
@@ -98,6 +104,7 @@ class SberType(BaseCheckType,
         self.parse_recipient_phone()
         self.parse_check_date()
         self.parse_amount()
+        self.parse_commission()
         self.parse_document_number()
         return self
 

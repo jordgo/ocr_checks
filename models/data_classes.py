@@ -62,7 +62,7 @@ class RectangleData:
 class FrequencyKey:
     value: str
     order:  int
-    count: int = 0
+    count: int = 1
 
     def __hash__(self):
         return hash((self.value))

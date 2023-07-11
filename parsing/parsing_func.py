@@ -13,9 +13,9 @@ from utility.rectangle_utils.prepare_img import cut_img_by_rect
 _logger = logging.getLogger("app")
 
 
-def process_rectangle_img(img: np.ndarray, rect: RectangleData) -> str:
+def process_rectangle_img(img: np.ndarray, rect: RectangleData, default_word_count: int = None) -> str:
     cropped = cut_img_by_rect(img, rect)
-    results, _ = _get_results_by_tesseract_configs(cropped)
+    results, _ = _get_results_by_tesseract_configs(cropped, default_word_count)
     text, conf, r_coef, frame, _ = _get_text_by_max_conf(results) if results else ("", 0, 0, np.ndarray([]))
     _logger.info(text)
 

@@ -40,7 +40,7 @@ def replace_spaces(raw_str: str) -> str:
 
 
 def fix_amount(raw_str: str) -> str:
-    if len(raw_str) > 1:
+    if raw_str and len(raw_str) > 1:
         maaybe_sum = raw_str.split(' ')[0]
         return ''.join([s for s in maaybe_sum if s.isdigit() or s == '.' or s == ','])
     else:
@@ -56,9 +56,9 @@ def extract_last(raw_str: str) -> str:
     arr = str_origin.split(' ')
     if len(arr) > 1:
         res_arr = arr[-1]
+        return ''.join(res_arr)
     else:
-        res_arr = [NOT_DEFINED]
-    return ''.join(res_arr)
+        return NOT_DEFINED
 
 
 def extract_last_numbers(number_excluded: int) -> Callable:
@@ -79,9 +79,9 @@ def extract_except_from_start(number_excluded: int) -> Callable:
         arr = str_origin.split(' ')
         if len(arr) > number_excluded:
             res_arr = arr[number_excluded:]
+            return ' '.join(res_arr)
         else:
-            res_arr = [NOT_DEFINED]
-        return ' '.join(res_arr)
+            return NOT_DEFINED
     return body
 
 
@@ -125,16 +125,22 @@ def create_frequency_dict(arr: List[List[str]]) -> Dict[FrequencyKey, int]:
     return frequency_dict_sort
 
 
-def create_str_from_frequency_dict(f_dict: Dict[FrequencyKey, int], arr: List[List[str]]) -> str:
+def create_str_from_frequency_dict(f_dict: Dict[FrequencyKey, int],
+                                   arr: List[List[str]],
+                                   default_num_words: int = None) -> str:
     result_arr: List[FrequencyKey] = []
+    exists_orders = []
     if arr and arr[0]:
-        max_len = find_words_number(arr)
+        max_len = find_words_number(arr) if default_num_words is None else default_num_words
         for f_key, n in f_dict.items():
             if n > 2 and len(result_arr) < max_len:
+                if f_key.order == 0 and f_key.order in exists_orders:
+                    continue
                 result_arr.append(f_key)
+                exists_orders.append(f_key.order)
     sorted_res_arr = sorted(result_arr, key=lambda k: k.avg_order)
     result_text = ' '.join([a.value for a in sorted_res_arr])
-    _logger.info(f"Result Text: <{result_text}")
+    _logger.info(f"Result Text: <{result_text}>")
     return result_text
 
 

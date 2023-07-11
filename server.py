@@ -4,6 +4,7 @@ import io
 import logging
 import multiprocessing
 import queue
+import traceback
 
 import numpy as np
 from flask import Flask, request
@@ -15,6 +16,9 @@ from parsing.queue_handler import QueueHandler
 
 from waitress import serve
 import imageio
+import io
+# from fpdf import FPDF
+from pdf2image import convert_from_bytes
 
 from utility.sending.by_url import send_result_parallel
 
@@ -38,13 +42,12 @@ def bank_check():
         url: str = data_dict['url']
         img_base_64 = data_dict['img'].split(",")[1] if ',' in data_dict['img'] else data_dict['img']
         bytes = base64.b64decode(img_base_64)
+        try:
+            img = np.array(imageio.v3.imread(io.BytesIO(bytes)))
+        except Exception as e:
+            pmp_images = convert_from_bytes(bytes)
+            img = np.array(pmp_images[0])
 
-        # bytes_io = io.BytesIO(bytes)
-        # im = Image.open(bytes_io)
-        # print('2222222222222222222222222222222222222222222222222222')
-        img = np.array(imageio.v3.imread(io.BytesIO(bytes)))
-        # img = np.asarray(im)
-        # print('11111111111111111111111111111111111111111111111111111111111111111111111111111')
         data = RequestBankCheck(url, img)
         q.put(data, block=True, timeout=60)
         _logger.info(f"Data added for url: <{url}>")
@@ -61,7 +64,7 @@ def bank_check():
     except Exception as e:
         url: str = data_dict['url']
         send_result_parallel(url, {})
-        _logger.error(f"Wrong parameters, <{e}>")
+        _logger.error(f"Wrong parameters, <{traceback.format_exc()}>")
         return create_response("error", f"Wrong parameters, <{e}>")
 
     return create_response("ok", "")

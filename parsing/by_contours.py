@@ -218,7 +218,7 @@ def _parse_with_easy_ocr(cropped: np.ndarray, is_bold: bool) -> tuple:
     return [TesseractResp('', 0, 2, cropped, [])], 1
 
 
-def _get_results_by_tesseract_configs(cropped: np.ndarray) -> tuple:
+def _get_results_by_tesseract_configs(cropped: np.ndarray, default_word_count: int = None) -> tuple:
     """
     If the result is not found, changes the tesseract configuration
     :param cropped: np.ndarray - original cropped image
@@ -239,23 +239,12 @@ def _get_results_by_tesseract_configs(cropped: np.ndarray) -> tuple:
     results = [_get_text_by_max_conf(results2 + results1)]
 
     count5 = 0
-    res5 = _get_text_by_max_conf(results) #.text.strip() if results else ""
-    results4 = []
+    res5 = _get_text_by_max_conf(results)
     if res5 is None or (res5 and res5.conf < 94):
         results, count5 = _get_results(TESSERACT_CONF_DEFAULT, cropped_origin, True, False,
                                        TESSERACT_QUALITY, TESSERACT_QUALITY_MIN)
 
-    res_text = ''
-    res = _get_text_by_max_conf(results) if results else None
-    if res is None or res.conf < 90:
-        lm = lambda arr: [r.results for r in arr]
-        tess_arr = lm(results) + lm(results1) + lm(results2)
-        tess_arr = sorted(tess_arr, key=lambda a: len(a), reverse=True)
-        res_text = create_str_from_frequency_dict(create_frequency_dict(tess_arr), tess_arr)
-        print('11111111111111111111111111111111111111111111', res_text)
-
-    if res_text.strip() != '':
-        results = [TesseractResp(res_text, 90, 2, cropped, [])]
+    results = calculate_result(results, [results, results1, results2], cropped, default_word_count)
 
     count6 = 0
     if not results or _get_text_by_max_conf(results).conf == 0:
@@ -265,7 +254,6 @@ def _get_results_by_tesseract_configs(cropped: np.ndarray) -> tuple:
     count6 = 0
     if not results or _get_text_by_max_conf(results).conf == 0:
         results, count6 = _parse_with_easy_ocr(cropped, False)
-    print('66666666666666666666666666666666666')
 
     count7 = 0
     if not results or _get_text_by_max_conf(results).conf == 0:
@@ -274,6 +262,23 @@ def _get_results_by_tesseract_configs(cropped: np.ndarray) -> tuple:
     count = 0 #count1 + count2 + count5 # + count3 + count4
 
     return results, count
+
+def calculate_result(results: List[TesseractResp],
+                     results_arr: List[List[TesseractResp]],
+                     cropped: np.ndarray,
+                     default_word_count: int) -> List[TesseractResp]:
+    res_text = ''
+    last_res = _get_text_by_max_conf(results) if results else None
+    if last_res is None or last_res.conf < 90:
+        lm = lambda arr: [r.results for r in arr]
+        tess_arr: List[str] = sum(map(lm, results_arr), start=[]) #lm(results) + lm(results1) + lm(results2)
+        tess_arr = sorted(tess_arr, key=lambda a: len(a), reverse=True)
+        res_text = create_str_from_frequency_dict(create_frequency_dict(tess_arr), tess_arr, default_word_count)
+        print('11111111111111111111111111111111111111111111', res_text)
+
+    if res_text.strip() != '':
+        results = [TesseractResp(res_text, 90, 2, cropped, [])]
+    return results
 
 
 @print_time_of_script
