@@ -41,7 +41,7 @@ def replace_spaces(raw_str: str) -> str:
 
 def fix_amount(raw_str: str) -> str:
     if raw_str and len(raw_str) > 1:
-        maaybe_sum = raw_str.split(' ')[0]
+        maaybe_sum = raw_str #.split(' ')[0]
         return ''.join([s for s in maaybe_sum if s.isdigit() or s == '.' or s == ','])
     else:
         return NOT_DEFINED

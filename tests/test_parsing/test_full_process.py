@@ -11,6 +11,7 @@ from parsing.post_process import fix_word
     (ROOT_DIR + "/tests/imgs/sber/sber_3.jpeg", {'commission': '0,00', 'recipient_phone': '+7(989) 193-75-04', 'document_number': '5089792932', 'recipient_card_number': '4558', 'recipient_name': 'Апексей Владимирович Х.', 'sender_name': 'Екатерина Фаритовна Е.', 'sender_card_number': '7938', 'check_date': '6 июня 2023 04:44:21 (МСК)', 'amount': '310,00', 'bank': 'sber'}),
     (ROOT_DIR + "/tests/imgs/sber/sber_4.jpeg", {'commission': '0,00', 'recipient_phone': None, 'document_number': '4815759928', 'recipient_card_number': '6662', 'recipient_name': 'Дмитрий Станиславович И.', 'sender_name': 'Юрий Александрович Л.', 'sender_card_number': '7306', 'check_date': '6 июня 2023 06:43:39 (МСК)', 'amount': '330,00', 'bank': 'sber'}),
     (ROOT_DIR + "/tests/imgs/sber/sber_5.jpeg", {'commission': '0,00', 'recipient_phone': None, 'document_number': '4627953438', 'recipient_card_number': '5023', 'recipient_name': 'Александр Васильевич П.', 'sender_name': 'Лариса Святославовна П.', 'sender_card_number': '6436', 'check_date': '6 июня 2023 07:08:55 (МСК)', 'amount': '300,00', 'bank': 'sber'}),
+    (ROOT_DIR + "/tests/imgs/sber/sber_6.png", {'document_number': '4961002824', 'commission': '0,00', 'recipient_phone': None, 'recipient_card_number': '6198', 'recipient_name': 'Дмитрий Владимирович П.', 'sender_name': 'Анастасия Владимировна Р.', 'sender_card_number': '8762', 'check_date': '13 июля 2023 12:07:45 (МСК)', 'amount': '1000,00', 'bank': 'sber'}),
 ])
 def test_full_sber(img_path, exp):
     res = main(img_path)
